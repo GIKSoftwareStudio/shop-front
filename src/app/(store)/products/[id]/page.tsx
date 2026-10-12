@@ -1,4 +1,4 @@
-import ProductCard from "@/components/ProductCard";
+import { Suspense } from "react";
 import Productsdetails from "@/components/Productsdetails";
 
 type Props = {
@@ -7,7 +7,15 @@ type Props = {
     }>;
 };
 
-export default async function ProductPage({ params }: Props) {
+function ProductLoading() {
+    return (
+        <main className="p-6">
+            <p>Loading product...</p>
+        </main>
+    );
+}
+
+async function ProductContent({ params }: Props) {
     const { id } = await params;
 
     const response = await fetch(
@@ -30,5 +38,13 @@ export default async function ProductPage({ params }: Props) {
                 product={product}
             />
         </main>
+    );
+}
+
+export default function ProductPage({ params }: Props) {
+    return (
+        <Suspense fallback={<ProductLoading />}>
+            <ProductContent params={params} />
+        </Suspense>
     );
 }
