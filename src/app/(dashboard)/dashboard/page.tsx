@@ -1,7 +1,7 @@
 
 export default function DashboardPage() {
     return (
-        <section className="space-y-6">
+        <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">
                     Overview
@@ -21,6 +21,6 @@ export default function DashboardPage() {
                     Your dashboard overview will appear here.
                 </p>
             </div>
-        </section>
+        </div>
     );
 }

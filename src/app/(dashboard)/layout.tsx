@@ -1,25 +1,15 @@
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import {AppSidebar} from "@/components/dashboard/Sidebar";
 
-import type { ReactNode } from "react";
 
-import Sidebar from "@/components/dashboard/Sidebar";
-import Topbar from "@/components/dashboard/Topbar";
-
-export default function DashboardLayout({
-                                            children,
-                                        }: {
-    children: ReactNode;
-}) {
+export default function Layout({ children }: { children: React.ReactNode }) {
     return (
-        <div className="flex min-h-screen flex-col bg-muted/30 md:flex-row">
-            <Sidebar />
-
-            <div className="flex min-w-0 flex-1 flex-col">
-                <Topbar />
-
-                <main className="flex-1 p-4 md:p-6">
-                    {children}
-                </main>
-            </div>
-        </div>
-    );
+        <SidebarProvider>
+            <AppSidebar />
+            <main>
+                <SidebarTrigger />
+                {children}
+            </main>
+        </SidebarProvider>
+    )
 }

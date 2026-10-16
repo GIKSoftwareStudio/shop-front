@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -13,6 +12,12 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 
 import {
     DropdownMenu,
@@ -81,13 +86,16 @@ export default function Header() {
                         Home
                     </Link>
 
-                    <Link href="/products" className="text-sm hover:text-primary">
+                    <Link
+                        href="/products"
+                        className="text-sm hover:text-primary"
+                    >
                         Products
                     </Link>
                 </nav>
 
                 <div className="ml-auto flex items-center gap-2">
-                    {/* User menu */}
+                    {/* User menu with Avatar and Separator */}
                     <DropdownMenu>
                         <DropdownMenuTrigger
                             render={
@@ -98,10 +106,41 @@ export default function Header() {
                                 />
                             }
                         >
-                            <UserRound className="size-5" />
+                            <Avatar className="size-8">
+                                <AvatarImage
+                                    src="/images/avatar.png"
+                                    alt="User avatar"
+                                />
+                                <AvatarFallback>
+                                    <UserRound className="size-4" />
+                                </AvatarFallback>
+                            </Avatar>
                         </DropdownMenuTrigger>
 
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48">
+                            <div className="flex items-center gap-3 p-3">
+                                <Avatar className="size-9">
+                                    <AvatarImage
+                                        src="/images/avatar.png"
+                                        alt="User avatar"
+                                    />
+                                    <AvatarFallback>
+                                        <UserRound className="size-4" />
+                                    </AvatarFallback>
+                                </Avatar>
+
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium">
+                                        My Account
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Welcome back!
+                                    </p>
+                                </div>
+                            </div>
+
+                            <Separator />
+
                             <DropdownMenuItem render={<Link href="/login" />}>
                                 Login
                             </DropdownMenuItem>

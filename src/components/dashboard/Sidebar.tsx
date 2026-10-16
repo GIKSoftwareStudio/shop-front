@@ -3,49 +3,108 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Store,
+  Package,
+  Tags,
+} from "lucide-react";
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from "@/components/ui/sidebar";
 
 const navigation = [
-    { label: "Overview", href: "/dashboard" },
-    { label: "My Orders", href: "/dashboard/orders" },
-    { label: "Profile", href: "/dashboard/profile" },
-    { label: "Settings", href: "/dashboard/settings" },
+  {
+    title: "نمای کلی",
+    url: "/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "سفارش‌ها",
+    url: "/dashboard/orders",
+    icon: ShoppingCart,
+  },
+  {
+    title: "محصولات",
+    url: "/dashboard/products",
+    icon: Package,
+  },
+  {
+    title: "دسته‌بندی‌ها",
+    url: "/dashboard/categories",
+    icon: Tags,
+  },
 ];
 
-export default function Sidebar() {
-    const pathname = usePathname();
+export function AppSidebar() {
+  const pathname = usePathname();
 
-    return (
-        <aside className="border-b bg-background md:sticky md:top-0 md:h-screen md:w-64 md:shrink-0 md:border-b-0 md:border-r">
-            <div className="p-4 md:p-6">
-                <h2 className="mb-4 text-xl font-bold">Dashboard</h2>
-
-                <nav
-                    aria-label="Dashboard navigation"
-                    className="flex gap-2 overflow-x-auto md:flex-col"
-                >
-                    {navigation.map((item) => {
-                        const isActive =
-                            pathname === item.href ||
-                            (item.href !== "/dashboard" &&
-                                pathname.startsWith(`${item.href}/`));
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                aria-current={isActive ? "page" : undefined}
-                                className={`shrink-0 rounded-md px-3 py-2 text-sm transition-colors ${
-                                    isActive
-                                        ? "bg-primary text-primary-foreground"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                                }`}
-                            >
-                                {item.label}
-                            </Link>
-                        );
-                    })}
-                </nav>
+  return (
+      <Sidebar side="right" collapsible="icon" dir="rtl">
+        <SidebarHeader>
+          <div className="flex items-center gap-2 px-2 py-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Store className="size-5" />
             </div>
-        </aside>
-    );
+
+            <div className="grid flex-1 text-right text-sm leading-tight">
+              <span className="truncate font-bold">فروشگاه من</span>
+              <span className="truncate text-xs text-muted-foreground">
+              پنل مدیریت
+            </span>
+            </div>
+          </div>
+        </SidebarHeader>
+
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>منوی اصلی</SidebarGroupLabel>
+
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navigation.map((item) => {
+                  const isActive =
+                      pathname === item.url ||
+                      (item.url !== "/dashboard" &&
+                          pathname.startsWith(`${item.url}/`));
+
+                  return (
+                      <SidebarMenuItem key={item.url}>
+                        <SidebarMenuButton
+                            render={<Link href={item.url} />}
+                            isActive={isActive}
+                            tooltip={item.title}
+                        >
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <SidebarFooter>
+          <p className="px-2 py-2 text-xs text-muted-foreground">
+            مدیریت فروشگاه
+          </p>
+        </SidebarFooter>
+
+        <SidebarRail />
+      </Sidebar>
+  );
 }
