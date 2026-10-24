@@ -1,7 +1,7 @@
 
 const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_BASE_URL ??
-    "http://192.168.100.77:8000/api";
+    "http://192.168.100.94:8000/api";
 
 type ApiRequestOptions = Omit<RequestInit, "body"> & {
     body?: unknown;
