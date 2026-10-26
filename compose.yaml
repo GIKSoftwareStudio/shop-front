@@ -1,0 +1,13 @@
+services:
+  shop-front:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shop-front
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: "0.0.0.0"
