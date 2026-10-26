@@ -58,30 +58,44 @@ export default function CheckoutPage() {
                 items: checkoutItems,
             });
 
-            clearCart();
+            const apiBaseUrl =
+                process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
 
-            toast.success(
-                response.message || "سفارش با موفقیت ثبت شد.",
-            );
+            if (!apiBaseUrl) {
+                throw new Error(
+                    "NEXT_PUBLIC_API_BASE_URL is not configured. Check your .env.local file.",
+                );
+            }
+
+            let backendOrigin: string;
+
+            try {
+                backendOrigin = new URL(apiBaseUrl).origin;
+            } catch {
+                throw new Error(
+                    "آدرس API تنظیم‌شده معتبر نیست.",
+                );
+            }
 
             const paymentUrl = new URL(
                 response.payment_url,
                 window.location.origin,
             );
 
-            // Only navigate to the configured backend origin or
-            // the current frontend origin.
-            const backendOrigin = new URL(
-                process.env.NEXT_PUBLIC_API_BASE_URL ??
-                "http://192.168.100.77:8000/api",
-            ).origin;
-
+            // Only allow payment URLs from the configured backend
+            // or the current frontend origin.
             if (
                 paymentUrl.origin !== backendOrigin &&
                 paymentUrl.origin !== window.location.origin
             ) {
                 throw new Error("آدرس پرداخت معتبر نیست.");
             }
+
+            clearCart();
+
+            toast.success(
+                response.message || "سفارش با موفقیت ثبت شد.",
+            );
 
             window.location.assign(paymentUrl.toString());
         } catch (error) {
@@ -97,7 +111,10 @@ export default function CheckoutPage() {
 
     if (!hydrated) {
         return (
-            <main dir="rtl" className="mx-auto max-w-5xl px-4 py-12">
+            <main
+                dir="rtl"
+                className="mx-auto max-w-5xl px-4 py-12"
+            >
                 <div className="animate-pulse rounded-xl border p-8 text-center text-muted-foreground">
                     در حال بارگذاری سبد خرید...
                 </div>
@@ -107,7 +124,10 @@ export default function CheckoutPage() {
 
     if (items.length === 0) {
         return (
-            <main dir="rtl" className="mx-auto max-w-5xl px-4 py-12">
+            <main
+                dir="rtl"
+                className="mx-auto max-w-5xl px-4 py-12"
+            >
                 <div className="rounded-2xl border bg-card px-6 py-12 text-center">
                     <ShoppingBag className="mx-auto mb-4 size-12 text-muted-foreground" />
 
@@ -132,11 +152,15 @@ export default function CheckoutPage() {
     }
 
     return (
-        <main dir="rtl" className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+        <main
+            dir="rtl"
+            className="mx-auto max-w-5xl px-4 py-10 sm:px-6"
+        >
             <div className="mb-8">
                 <h1 className="text-2xl font-bold sm:text-3xl">
                     تکمیل سفارش
                 </h1>
+
                 <p className="mt-2 text-sm text-muted-foreground">
                     سفارش خود را بررسی کنید و برای پرداخت ادامه دهید.
                 </p>
@@ -148,6 +172,7 @@ export default function CheckoutPage() {
                         <h2 className="font-semibold">
                             خلاصه محصولات
                         </h2>
+
                         <p className="mt-1 text-sm text-muted-foreground">
                             {totalItems.toLocaleString("fa-IR")} عدد محصول
                         </p>
@@ -176,6 +201,7 @@ export default function CheckoutPage() {
                                     <h3 className="truncate font-medium">
                                         {item.title}
                                     </h3>
+
                                     <p className="mt-2 text-sm text-muted-foreground">
                                         تعداد:{" "}
                                         {item.quantity.toLocaleString("fa-IR")}
@@ -208,6 +234,7 @@ export default function CheckoutPage() {
                         <span className="text-muted-foreground">
                             تعداد اقلام
                         </span>
+
                         <span>
                             {totalItems.toLocaleString("fa-IR")}
                         </span>
@@ -217,6 +244,7 @@ export default function CheckoutPage() {
                         <span className="text-muted-foreground">
                             جمع سبد خرید
                         </span>
+
                         <span className="font-semibold">
                             {formatPrice(totalPrice)}
                         </span>

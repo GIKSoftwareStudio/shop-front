@@ -3,9 +3,14 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
 
-        const backendUrl =
-            process.env.CHAT_API_URL ??
-            "http://192.168.100.76:8000/v1/chat/completions/";
+        const backendUrl = process.env.CHAT_API_URL?.trim();
+
+        if (!backendUrl) {
+            return Response.json(
+                { error: "آدرس سرویس چت تنظیم نشده است." },
+                { status: 500 },
+            );
+        }
 
         const response = await fetch(backendUrl, {
             method: "POST",

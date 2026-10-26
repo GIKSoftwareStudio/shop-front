@@ -1,7 +1,15 @@
 
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL ??
-    "http://192.168.100.94:8000/api";
+function getApiBaseUrl(): string {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+
+    if (!baseUrl) {
+        throw new Error(
+            "NEXT_PUBLIC_API_BASE_URL is not configured. Check your .env.local file.",
+        );
+    }
+
+    return baseUrl.replace(/\/+$/, "");
+}
 
 type ApiRequestOptions = Omit<RequestInit, "body"> & {
     body?: unknown;
@@ -28,7 +36,7 @@ export async function apiRequest<T>(
     }
 
     const response = await fetch(
-        `${API_BASE_URL.replace(/\/+$/, "")}/${endpoint.replace(/^\/+/, "")}`,
+        `${getApiBaseUrl()}/${endpoint.replace(/^\/+/, "")}`,
         {
             ...requestOptions,
             headers: requestHeaders,
