@@ -1,8 +1,9 @@
 
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Minus, Plus, ShoppingCart } from "lucide-react";
+import { Minus, Plus, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Product } from "@/api/store/products";
@@ -14,7 +15,25 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
-    const imageUrl = getProductImage(product);
+    const defaultImage = getProductImage(product);
+    const imagesList = product.images && product.images.length > 0
+        ? product.images.map((img) => img.image_url)
+        : [defaultImage];
+
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const imageUrl = imagesList[currentImageIndex] ?? defaultImage;
+
+    function handleNextImage(e: React.MouseEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        setCurrentImageIndex((prev) => (prev + 1) % imagesList.length);
+    }
+
+    function handlePrevImage(e: React.MouseEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        setCurrentImageIndex((prev) => (prev - 1 + imagesList.length) % imagesList.length);
+    }
 
     const addItem = useCartStore((state) => state.addItem);
     const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -25,8 +44,10 @@ export default function ProductCard({ product }: ProductCardProps) {
     );
 
     const formattedPrice = Number(product.price).toLocaleString("fa-IR");
+    const isOutOfStock = product.stock <= 0;
 
     function handleAddToCart() {
+        if (isOutOfStock) return;
         addItem(product);
         toast.success("محصول به سبد خرید اضافه شد");
     }
@@ -36,6 +57,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
 
     function handleIncrease() {
+        if (isOutOfStock) return;
         addItem(product);
     }
 
@@ -48,7 +70,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             <Link
                 href={`/products/${product.id}`}
                 aria-label={`مشاهده محصول ${product.title}`}
-                className="block aspect-square w-full overflow-hidden rounded-xl bg-slate-100 sm:rounded-[1.5rem] lg:rounded-[2rem] dark:bg-[#151D2B]"
+                className="relative block aspect-square w-full overflow-hidden rounded-xl bg-slate-100 sm:rounded-[1.5rem] lg:rounded-[2rem] dark:bg-[#151D2B]"
             >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -57,6 +79,27 @@ export default function ProductCard({ product }: ProductCardProps) {
                     loading="lazy"
                     className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
+
+                {imagesList.length > 1 && (
+                    <div className="absolute inset-x-2 top-1/2 -translate-y-1/2 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                        <button
+                            type="button"
+                            onClick={handlePrevImage}
+                            className="pointer-events-auto flex size-8 items-center justify-center rounded-full bg-white/80 text-slate-800 shadow-md backdrop-blur-sm transition-transform hover:scale-110 active:scale-95 dark:bg-slate-900/80 dark:text-white"
+                            aria-label="تصویر قبلی"
+                        >
+                            <ChevronRight className="size-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleNextImage}
+                            className="pointer-events-auto flex size-8 items-center justify-center rounded-full bg-white/80 text-slate-800 shadow-md backdrop-blur-sm transition-transform hover:scale-110 active:scale-95 dark:bg-slate-900/80 dark:text-white"
+                            aria-label="تصویر بعدی"
+                        >
+                            <ChevronLeft className="size-4" />
+                        </button>
+                    </div>
+                )}
             </Link>
 
             {/* اطلاعات محصول */}
@@ -89,7 +132,13 @@ export default function ProductCard({ product }: ProductCardProps) {
                         </span>
                     </p>
 
-                    {quantity === 0 ? (
+                    {isOutOfStock ? (
+                        <div className="inline-flex min-h-10 w-full min-w-0 items-center justify-center gap-1 rounded-full bg-slate-100 px-2 py-2 text-[11px] font-medium text-slate-400 sm:gap-2 sm:px-4 sm:text-sm lg:px-5 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed">
+                            <span className="truncate">
+                                ناموجود
+                            </span>
+                        </div>
+                    ) : quantity === 0 ? (
                         <button
                             type="button"
                             onClick={handleAddToCart}

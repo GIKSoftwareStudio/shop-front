@@ -45,7 +45,7 @@ function formatPrice(price: number) {
     return `${price.toLocaleString("fa-IR")} تومان`;
 }
 
-function CartContents({ hydrated }: { hydrated: boolean }) {
+function CartContents({ hydrated, onClose }: { hydrated: boolean; onClose?: () => void }) {
     const items = useCartStore((state) => state.items);
     const updateQuantity = useCartStore((state) => state.updateQuantity);
     const removeItem = useCartStore((state) => state.removeItem);
@@ -181,7 +181,12 @@ function CartContents({ hydrated }: { hydrated: boolean }) {
 
                 <Button
                     nativeButton={false}
-                    render={<Link href="/cart" />}
+                    render={
+                        <Link
+                            href="/cart"
+                            onClick={() => onClose?.()}
+                        />
+                    }
                     className="w-full"
                 >
                     مشاهده سبد خرید
@@ -199,6 +204,7 @@ function CartSheet({
     mobile?: boolean;
 }) {
     const items = useCartStore((state) => state.items);
+    const [open, setOpen] = useState(false);
 
     const totalItems = items.reduce(
         (total, item) => total + item.quantity,
@@ -206,7 +212,7 @@ function CartSheet({
     );
 
     return (
-        <Sheet>
+        <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
                 render={
                     <Button
@@ -243,7 +249,7 @@ function CartSheet({
                     <SheetTitle>سبد خرید شما</SheetTitle>
                 </SheetHeader>
 
-                <CartContents hydrated={hydrated} />
+                <CartContents hydrated={hydrated} onClose={() => setOpen(false)} />
             </SheetContent>
         </Sheet>
     );

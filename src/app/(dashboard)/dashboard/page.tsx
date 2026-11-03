@@ -1,26 +1,20 @@
 
+import SalesChart from "@/components/dashboard/sales/SalesChart";
+
 export default function DashboardPage() {
     return (
-        <div className="space-y-6">
+        <div dir="rtl" className="space-y-6">
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">
-                    Overview
+                    نمای کلی
                 </h1>
 
                 <p className="mt-2 text-sm text-muted-foreground">
-                    Welcome to your dashboard.
+                    به پنل مدیریتی فروشگاه خوش آمدید.
                 </p>
             </div>
 
-            <div className="rounded-lg border bg-background p-6">
-                <h2 className="text-lg font-semibold">
-                    Dashboard
-                </h2>
-
-                <p className="mt-2 text-sm text-muted-foreground">
-                    Your dashboard overview will appear here.
-                </p>
-            </div>
+            <SalesChart />
         </div>
     );
 }
