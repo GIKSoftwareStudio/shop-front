@@ -38,10 +38,29 @@ export type PaginatedProducts = {
     };
 };
 
-export function getProducts(page = 1) {
-    return apiRequest<PaginatedProducts>(`products?page=${page}`, {
-        cache: "no-store",
-    });
+export async function getProducts(page = 1) {
+    try {
+        return await apiRequest<PaginatedProducts>(`products?page=${page}`, {
+            cache: "no-store",
+        });
+    } catch (error) {
+        console.error("Failed to fetch products:", error);
+        return {
+            products: [],
+            links: {
+                first: null,
+                last: null,
+                prev: null,
+                next: null,
+            },
+            meta: {
+                current_page: page,
+                last_page: 1,
+                per_page: 10,
+                total: 0,
+            },
+        };
+    }
 }
 
 export function getProductImage(product: Product) {
