@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import {
     Check,
     Tag,
     Banknote,
+    PackageCheck,
+    ArrowDownWideNarrow,
 } from "lucide-react";
 
 type Props = {
@@ -23,39 +25,184 @@ type Props = {
     }[];
 };
 
+type FilterSection =
+    | "categories"
+    | "price"
+    | "stock"
+    | "sorting";
+
+type SectionHeaderProps = {
+    section: FilterSection;
+    icon: ReactNode;
+    title: string;
+    description: string;
+    isOpen: boolean;
+    onToggle: () => void;
+};
+
+function SectionHeader({
+                           icon,
+                           title,
+                           description,
+                           isOpen,
+                           onToggle,
+                       }: SectionHeaderProps) {
+    return (
+        <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={isOpen}
+            className="flex w-full items-center justify-between gap-3 p-4 text-right transition-colors hover:bg-muted/50"
+        >
+            <div className="flex items-center gap-3">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    {icon}
+                </div>
+
+                <div>
+                    <p className="text-sm font-semibold">{title}</p>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        {description}
+                    </p>
+                </div>
+            </div>
+
+            <ChevronDown
+                className={`size-5 shrink-0 text-muted-foreground transition-transform duration-300 ${
+                    isOpen ? "rotate-180" : ""
+                }`}
+            />
+        </button>
+    );
+}
+
+function SectionContent({
+                            isOpen,
+                            children,
+                        }: {
+    isOpen: boolean;
+    children: ReactNode;
+}) {
+    return (
+        <div
+            className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+                isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+            }`}
+        >
+            <div className="min-h-0 overflow-hidden">
+                <div className="border-t p-4">{children}</div>
+            </div>
+        </div>
+    );
+}
+
+function ChoiceButton({
+                          selected,
+                          onClick,
+                          children,
+                      }: {
+    selected: boolean;
+    onClick: () => void;
+    children: ReactNode;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-pressed={selected}
+            className={`flex w-full items-center justify-between rounded-lg px-3 py-3 text-sm transition-colors ${
+                selected
+                    ? "bg-primary/10 font-semibold text-primary"
+                    : "hover:bg-muted"
+            }`}
+        >
+            <span>{children}</span>
+
+            {selected && <Check className="size-4 shrink-0" />}
+        </button>
+    );
+}
+
 export default function ProductsFilters({ categories }: Props) {
-    const router = useRouter();
-    const pathname = usePathname();
     const searchParams = useSearchParams();
 
+    // با تغییر URL، کامپوننت داخلی دوباره با مقادیر جدید ساخته می‌شود.
+    const queryKey = searchParams.toString();
+
+    return (
+        <ProductsFiltersContent
+            key={queryKey}
+            categories={categories}
+            queryString={queryKey}
+        />
+    );
+}
+
+function ProductsFiltersContent({
+                                    categories,
+                                    queryString,
+                                }: Props & { queryString: string }) {
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const initialParams = new URLSearchParams(queryString);
+
     const [categoryId, setCategoryId] = useState(
-        searchParams.get("category_id") ?? "",
+        initialParams.get("category_id") ?? "",
     );
 
     const [minPrice, setMinPrice] = useState(
-        searchParams.get("min_price") ?? "",
+        initialParams.get("min_price") ?? "",
     );
 
     const [maxPrice, setMaxPrice] = useState(
-        searchParams.get("max_price") ?? "",
+        initialParams.get("max_price") ?? "",
     );
 
-    const [openSections, setOpenSections] = useState({
+    const [inStock, setInStock] = useState(
+        initialParams.get("in_stock") ?? "",
+    );
+
+    const [sortBy, setSortBy] = useState(
+        initialParams.get("sort_by") ?? "",
+    );
+
+    const [openSections, setOpenSections] = useState<
+        Record<FilterSection, boolean>
+    >({
         categories: true,
         price: false,
+        stock: false,
+        sorting: false,
     });
-
-    useEffect(() => {
-        setCategoryId(searchParams.get("category_id") ?? "");
-        setMinPrice(searchParams.get("min_price") ?? "");
-        setMaxPrice(searchParams.get("max_price") ?? "");
-    }, [searchParams]);
 
     const activeFilters =
         Number(Boolean(categoryId)) +
-        Number(Boolean(minPrice || maxPrice));
+        Number(Boolean(minPrice)) +
+        Number(Boolean(maxPrice)) +
+        Number(Boolean(inStock)) +
+        Number(Boolean(sortBy));
 
-    function toggleSection(section: "categories" | "price") {
+    const selectedCategory = categories.find(
+        (category) => String(category.id) === categoryId,
+    );
+
+    const stockLabel =
+        inStock === "true"
+            ? "فقط محصولات موجود"
+            : inStock === "false"
+                ? "فقط محصولات ناموجود"
+                : "همه محصولات";
+
+    const sortingLabel =
+        sortBy === "newest"
+            ? "جدیدترین محصولات"
+            : sortBy === "oldest"
+                ? "قدیمی‌ترین محصولات"
+                : "پیش‌فرض";
+
+    function toggleSection(section: FilterSection) {
         setOpenSections((previous) => ({
             ...previous,
             [section]: !previous[section],
@@ -63,12 +210,14 @@ export default function ProductsFilters({ categories }: Props) {
     }
 
     function updateUrl(reset = false) {
-        const params = new URLSearchParams(searchParams.toString());
+        const params = new URLSearchParams(queryString);
 
         if (reset) {
             params.delete("category_id");
             params.delete("min_price");
             params.delete("max_price");
+            params.delete("in_stock");
+            params.delete("sort_by");
         } else {
             if (categoryId) {
                 params.set("category_id", categoryId);
@@ -87,9 +236,21 @@ export default function ProductsFilters({ categories }: Props) {
             } else {
                 params.delete("max_price");
             }
+
+            if (inStock === "true" || inStock === "false") {
+                params.set("in_stock", inStock);
+            } else {
+                params.delete("in_stock");
+            }
+
+            if (sortBy === "newest" || sortBy === "oldest") {
+                params.set("sort_by", sortBy);
+            } else {
+                params.delete("sort_by");
+            }
         }
 
-        // صفحه‌بندی بعد از تغییر فیلتر باید از صفحه اول شروع شود.
+        // بعد از تغییر فیلتر، به صفحه اول برگرد.
         params.delete("page");
 
         const query = params.toString();
@@ -100,9 +261,7 @@ export default function ProductsFilters({ categories }: Props) {
         );
     }
 
-    function handleSubmit(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
-
+    function handleSubmit() {
         const min = minPrice.trim()
             ? Number(minPrice)
             : undefined;
@@ -129,13 +288,11 @@ export default function ProductsFilters({ categories }: Props) {
         setCategoryId("");
         setMinPrice("");
         setMaxPrice("");
+        setInStock("");
+        setSortBy("");
 
         updateUrl(true);
     }
-
-    const selectedCategory = categories.find(
-        (category) => String(category.id) === categoryId,
-    );
 
     return (
         <section
@@ -167,211 +324,210 @@ export default function ProductsFilters({ categories }: Props) {
                 )}
             </div>
 
-            <div className="space-y-4">
-                {/* Categories Mega Menu */}
+            <form
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    handleSubmit();
+                }}
+                className="space-y-4"
+            >
+                {/* Categories */}
                 <div className="overflow-hidden rounded-xl border">
-                    <button
-                        type="button"
-                        onClick={() => toggleSection("categories")}
-                        aria-expanded={openSections.categories}
-                        className="flex w-full items-center justify-between gap-3 p-4 text-right transition-colors hover:bg-muted/50"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
-                                <Tag className="size-4" />
-                            </div>
+                    <SectionHeader
+                        section="categories"
+                        icon={<Tag className="size-4" />}
+                        title="دسته‌بندی محصولات"
+                        description={
+                            selectedCategory?.name ?? "همه دسته‌بندی‌ها"
+                        }
+                        isOpen={openSections.categories}
+                        onToggle={() => toggleSection("categories")}
+                    />
 
-                            <div>
-                                <p className="text-sm font-semibold">
-                                    دسته‌بندی محصولات
-                                </p>
+                    <SectionContent isOpen={openSections.categories}>
+                        <div className="max-h-72 space-y-1 overflow-y-auto">
+                            <ChoiceButton
+                                selected={categoryId === ""}
+                                onClick={() => setCategoryId("")}
+                            >
+                                همه دسته‌بندی‌ها
+                            </ChoiceButton>
 
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                    {selectedCategory?.name ?? "همه دسته‌بندی‌ها"}
-                                </p>
-                            </div>
+                            {categories.map((category) => (
+                                <ChoiceButton
+                                    key={category.id}
+                                    selected={
+                                        categoryId === String(category.id)
+                                    }
+                                    onClick={() =>
+                                        setCategoryId(String(category.id))
+                                    }
+                                >
+                                    {category.name}
+                                </ChoiceButton>
+                            ))}
                         </div>
-
-                        <ChevronDown
-                            className={`size-5 shrink-0 text-muted-foreground transition-transform duration-300 ${
-                                openSections.categories
-                                    ? "rotate-180"
-                                    : ""
-                            }`}
-                        />
-                    </button>
-
-                    <div
-                        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-                            openSections.categories
-                                ? "grid-rows-[1fr]"
-                                : "grid-rows-[0fr]"
-                        }`}
-                    >
-                        <div className="min-h-0 overflow-hidden">
-                            <div className="border-t p-3">
-                                <div className="max-h-72 space-y-1 overflow-y-auto">
-                                    <button
-                                        type="button"
-                                        onClick={() => setCategoryId("")}
-                                        className={`flex w-full items-center justify-between rounded-lg px-3 py-3 text-sm transition-colors ${
-                                            categoryId === ""
-                                                ? "bg-primary/10 font-semibold text-primary"
-                                                : "hover:bg-muted"
-                                        }`}
-                                    >
-                                        <span>همه دسته‌بندی‌ها</span>
-
-                                        {categoryId === "" && (
-                                            <Check className="size-4" />
-                                        )}
-                                    </button>
-
-                                    {categories.map((category) => {
-                                        const isSelected =
-                                            categoryId === String(category.id);
-
-                                        return (
-                                            <button
-                                                key={category.id}
-                                                type="button"
-                                                onClick={() =>
-                                                    setCategoryId(
-                                                        String(category.id),
-                                                    )
-                                                }
-                                                className={`flex w-full items-center justify-between rounded-lg px-3 py-3 text-sm transition-colors ${
-                                                    isSelected
-                                                        ? "bg-primary/10 font-semibold text-primary"
-                                                        : "hover:bg-muted"
-                                                }`}
-                                            >
-                                                <span>{category.name}</span>
-
-                                                {isSelected && (
-                                                    <Check className="size-4" />
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    </SectionContent>
                 </div>
 
-                {/* Price Mega Menu */}
+                {/* Price */}
                 <div className="overflow-hidden rounded-xl border">
-                    <button
-                        type="button"
-                        onClick={() => toggleSection("price")}
-                        aria-expanded={openSections.price}
-                        className="flex w-full items-center justify-between gap-3 p-4 text-right transition-colors hover:bg-muted/50"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="flex size-9 items-center justify-center rounded-lg bg-muted">
-                                <Banknote className="size-4" />
+                    <SectionHeader
+                        section="price"
+                        icon={<Banknote className="size-4" />}
+                        title="محدوده قیمت"
+                        description={
+                            minPrice || maxPrice
+                                ? "محدوده قیمت انتخاب شده"
+                                : "انتخاب بازه قیمت به تومان"
+                        }
+                        isOpen={openSections.price}
+                        onToggle={() => toggleSection("price")}
+                    />
+
+                    <SectionContent isOpen={openSections.price}>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="min-price"
+                                    className="text-xs font-medium text-muted-foreground"
+                                >
+                                    حداقل قیمت (تومان)
+                                </label>
+
+                                <Input
+                                    id="min-price"
+                                    type="number"
+                                    min="0"
+                                    placeholder="مثلاً 100000"
+                                    value={minPrice}
+                                    onChange={(event) =>
+                                        setMinPrice(event.target.value)
+                                    }
+                                    className="h-11"
+                                />
                             </div>
 
-                            <div>
-                                <p className="text-sm font-semibold">
-                                    محدوده قیمت
-                                </p>
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="max-price"
+                                    className="text-xs font-medium text-muted-foreground"
+                                >
+                                    حداکثر قیمت (تومان)
+                                </label>
 
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                    {minPrice || maxPrice
-                                        ? "محدوده قیمت انتخاب شده"
-                                        : "انتخاب بازه قیمت به تومان"}
-                                </p>
-                            </div>
-                        </div>
-
-                        <ChevronDown
-                            className={`size-5 shrink-0 text-muted-foreground transition-transform duration-300 ${
-                                openSections.price
-                                    ? "rotate-180"
-                                    : ""
-                            }`}
-                        />
-                    </button>
-
-                    <div
-                        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-                            openSections.price
-                                ? "grid-rows-[1fr]"
-                                : "grid-rows-[0fr]"
-                        }`}
-                    >
-                        <div className="min-h-0 overflow-hidden">
-                            <div className="space-y-4 border-t p-4">
-                                <div className="space-y-2">
-                                    <label
-                                        htmlFor="min-price"
-                                        className="text-xs font-medium text-muted-foreground"
-                                    >
-                                        حداقل قیمت (تومان)
-                                    </label>
-
-                                    <Input
-                                        id="min-price"
-                                        type="number"
-                                        min="0"
-                                        placeholder="مثلاً 100000"
-                                        value={minPrice}
-                                        onChange={(event) =>
-                                            setMinPrice(event.target.value)
-                                        }
-                                        className="h-11"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label
-                                        htmlFor="max-price"
-                                        className="text-xs font-medium text-muted-foreground"
-                                    >
-                                        حداکثر قیمت (تومان)
-                                    </label>
-
-                                    <Input
-                                        id="max-price"
-                                        type="number"
-                                        min="0"
-                                        placeholder="مثلاً 5000000"
-                                        value={maxPrice}
-                                        onChange={(event) =>
-                                            setMaxPrice(event.target.value)
-                                        }
-                                        className="h-11"
-                                    />
-                                </div>
+                                <Input
+                                    id="max-price"
+                                    type="number"
+                                    min="0"
+                                    placeholder="مثلاً 5000000"
+                                    value={maxPrice}
+                                    onChange={(event) =>
+                                        setMaxPrice(event.target.value)
+                                    }
+                                    className="h-11"
+                                />
                             </div>
                         </div>
-                    </div>
+                    </SectionContent>
                 </div>
-            </div>
 
-            {/* Actions */}
-            <form onSubmit={handleSubmit} className="mt-6 space-y-3">
-                <Button
-                    type="submit"
-                    className="h-11 w-full gap-2"
-                >
-                    <SlidersHorizontal className="size-4" />
-                    اعمال فیلترها
-                </Button>
+                {/* Stock */}
+                <div className="overflow-hidden rounded-xl border">
+                    <SectionHeader
+                        section="stock"
+                        icon={<PackageCheck className="size-4" />}
+                        title="وضعیت موجودی"
+                        description={stockLabel}
+                        isOpen={openSections.stock}
+                        onToggle={() => toggleSection("stock")}
+                    />
 
-                {activeFilters > 0 && (
+                    <SectionContent isOpen={openSections.stock}>
+                        <div className="space-y-1">
+                            <ChoiceButton
+                                selected={inStock === ""}
+                                onClick={() => setInStock("")}
+                            >
+                                همه محصولات
+                            </ChoiceButton>
+
+                            <ChoiceButton
+                                selected={inStock === "true"}
+                                onClick={() => setInStock("true")}
+                            >
+                                فقط محصولات موجود
+                            </ChoiceButton>
+
+                            <ChoiceButton
+                                selected={inStock === "false"}
+                                onClick={() => setInStock("false")}
+                            >
+                                فقط محصولات ناموجود
+                            </ChoiceButton>
+                        </div>
+                    </SectionContent>
+                </div>
+
+                {/* Sorting */}
+                <div className="overflow-hidden rounded-xl border">
+                    <SectionHeader
+                        section="sorting"
+                        icon={<ArrowDownWideNarrow className="size-4" />}
+                        title="مرتب‌سازی"
+                        description={sortingLabel}
+                        isOpen={openSections.sorting}
+                        onToggle={() => toggleSection("sorting")}
+                    />
+
+                    <SectionContent isOpen={openSections.sorting}>
+                        <div className="space-y-1">
+                            <ChoiceButton
+                                selected={sortBy === ""}
+                                onClick={() => setSortBy("")}
+                            >
+                                پیش‌فرض
+                            </ChoiceButton>
+
+                            <ChoiceButton
+                                selected={sortBy === "newest"}
+                                onClick={() => setSortBy("newest")}
+                            >
+                                جدیدترین به قدیمی‌ترین
+                            </ChoiceButton>
+
+                            <ChoiceButton
+                                selected={sortBy === "oldest"}
+                                onClick={() => setSortBy("oldest")}
+                            >
+                                قدیمی‌ترین به جدیدترین
+                            </ChoiceButton>
+                        </div>
+                    </SectionContent>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-3 pt-2">
                     <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleReset}
+                        type="submit"
                         className="h-11 w-full gap-2"
                     >
-                        <RotateCcw className="size-4" />
-                        حذف همه فیلترها
+                        <SlidersHorizontal className="size-4" />
+                        اعمال فیلترها
                     </Button>
-                )}
+
+                    {activeFilters > 0 && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleReset}
+                            className="h-11 w-full gap-2"
+                        >
+                            <RotateCcw className="size-4" />
+                            حذف همه فیلترها
+                        </Button>
+                    )}
+                </div>
             </form>
         </section>
     );

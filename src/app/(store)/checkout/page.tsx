@@ -1,8 +1,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, LoaderCircle, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
@@ -19,8 +18,6 @@ function formatPrice(price: number) {
 }
 
 export default function CheckoutPage() {
-    const router = useRouter();
-
     const items = useCartStore((state) => state.items);
     const clearCart = useCartStore((state) => state.clearCart);
     const totalItems = useCartStore(selectTotalItems);
@@ -30,18 +27,26 @@ export default function CheckoutPage() {
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        useCartStore.persist.rehydrate();
-        setHydrated(true);
+        let mounted = true;
+
+        Promise.resolve(useCartStore.persist.rehydrate()).then(
+            () => {
+                if (mounted) setHydrated(true);
+            },
+            () => {
+                if (mounted) setHydrated(true);
+            },
+        );
+
+        return () => {
+            mounted = false;
+        };
     }, []);
 
-    const checkoutItems = useMemo(
-        () =>
-            items.map((item) => ({
-                product_id: item.id,
-                quantity: item.quantity,
-            })),
-        [items],
-    );
+    const checkoutItems = items.map((item) => ({
+        product_id: item.id,
+        quantity: item.quantity,
+    }));
 
     async function handleCheckout() {
         if (submitting) return;
@@ -72,9 +77,7 @@ export default function CheckoutPage() {
             try {
                 backendOrigin = new URL(apiBaseUrl).origin;
             } catch {
-                throw new Error(
-                    "آدرس API تنظیم‌شده معتبر نیست.",
-                );
+                throw new Error("آدرس API تنظیم‌شده معتبر نیست.");
             }
 
             const paymentUrl = new URL(

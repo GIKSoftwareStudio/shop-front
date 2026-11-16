@@ -1,9 +1,11 @@
+
 "use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type React from "react";
 import { useRouter } from "next/navigation";
+
 import {
     Search,
     ShoppingCart,
@@ -39,13 +41,66 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 
-import { type CartItem, useCartStore } from "@/api/store/cart-store";
+import {
+    type CartItem,
+    useCartStore,
+} from "@/api/store/cart-store";
 
 function formatPrice(price: number) {
     return `${price.toLocaleString("fa-IR")} تومان`;
 }
 
-function CartContents({ hydrated, onClose }: { hydrated: boolean; onClose?: () => void }) {
+type SearchFormProps = {
+    mobile?: boolean;
+    search: string;
+    onSearchChange: (value: string) => void;
+    onSubmit: React.ComponentProps<"form">["onSubmit"];
+};
+
+function SearchForm({
+                        mobile = false,
+                        search,
+                        onSearchChange,
+                        onSubmit,
+                    }: SearchFormProps) {
+    return (
+        <form
+            onSubmit={onSubmit}
+            dir="rtl"
+            className={
+                mobile
+                    ? "flex w-full items-center gap-2"
+                    : "absolute left-0 top-full z-50 mt-3 flex w-72 items-center gap-2 rounded-2xl border border-white/60 bg-background/95 p-3 shadow-xl backdrop-blur-xl"
+            }
+        >
+            <Input
+                autoFocus
+                value={search}
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder="جستجوی محصولات..."
+                aria-label="جستجوی محصولات"
+                className="rounded-xl"
+            />
+
+            <Button
+                type="submit"
+                size="icon"
+                className="shrink-0 rounded-xl"
+                aria-label="جستجو"
+            >
+                <Search className="size-4" />
+            </Button>
+        </form>
+    );
+}
+
+function CartContents({
+                          hydrated,
+                          onClose,
+                      }: {
+    hydrated: boolean;
+    onClose?: () => void;
+}) {
     const items = useCartStore((state) => state.items);
     const updateQuantity = useCartStore((state) => state.updateQuantity);
     const removeItem = useCartStore((state) => state.removeItem);
@@ -249,7 +304,10 @@ function CartSheet({
                     <SheetTitle>سبد خرید شما</SheetTitle>
                 </SheetHeader>
 
-                <CartContents hydrated={hydrated} onClose={() => setOpen(false)} />
+                <CartContents
+                    hydrated={hydrated}
+                    onClose={() => setOpen(false)}
+                />
             </SheetContent>
         </Sheet>
     );
@@ -279,7 +337,9 @@ export default function Header() {
         };
     }, []);
 
-    function handleSearch(event: React.FormEvent<HTMLFormElement>) {
+    const handleSearch: NonNullable<
+        React.ComponentProps<"form">["onSubmit"]
+    > = (event) => {
         event.preventDefault();
 
         const query = search.trim();
@@ -288,39 +348,7 @@ export default function Header() {
 
         router.push(`/products?search=${encodeURIComponent(query)}`);
         setShowSearch(false);
-    }
-
-    function SearchForm({ mobile = false }: { mobile?: boolean }) {
-        return (
-            <form
-                onSubmit={handleSearch}
-                dir="rtl"
-                className={
-                    mobile
-                        ? "flex w-full items-center gap-2"
-                        : "absolute left-0 top-full z-50 mt-3 flex w-72 items-center gap-2 rounded-2xl border border-white/60 bg-background/95 p-3 shadow-xl backdrop-blur-xl"
-                }
-            >
-                <Input
-                    autoFocus
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="جستجوی محصولات..."
-                    aria-label="جستجوی محصولات"
-                    className="rounded-xl"
-                />
-
-                <Button
-                    type="submit"
-                    size="icon"
-                    className="shrink-0 rounded-xl"
-                    aria-label="جستجو"
-                >
-                    <Search className="size-4" />
-                </Button>
-            </form>
-        );
-    }
+    };
 
     return (
         <header className="sticky top-0 z-50 border-0 bg-background/70 backdrop-blur-xl">
@@ -359,6 +387,7 @@ export default function Header() {
                                     src="/images/avatar.png"
                                     alt="تصویر کاربر"
                                 />
+
                                 <AvatarFallback>
                                     <UserRound className="size-4" />
                                 </AvatarFallback>
@@ -376,6 +405,7 @@ export default function Header() {
                                         src="/images/avatar.png"
                                         alt="تصویر کاربر"
                                     />
+
                                     <AvatarFallback>
                                         <UserRound className="size-4" />
                                     </AvatarFallback>
@@ -385,6 +415,7 @@ export default function Header() {
                                     <p className="text-sm font-medium">
                                         حساب کاربری
                                     </p>
+
                                     <p className="text-xs text-muted-foreground">
                                         خوش آمدید
                                     </p>
@@ -393,11 +424,15 @@ export default function Header() {
 
                             <Separator />
 
-                            <DropdownMenuItem render={<Link href="/login" />}>
+                            <DropdownMenuItem
+                                render={<Link href="/login" />}
+                            >
                                 ورود به حساب
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem render={<Link href="/profile" />}>
+                            <DropdownMenuItem
+                                render={<Link href="/profile" />}
+                            >
                                 پروفایل من
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -408,13 +443,21 @@ export default function Header() {
                         variant="ghost"
                         size="icon"
                         aria-label="جستجوی محصولات"
-                        onClick={() => setShowSearch((value) => !value)}
+                        onClick={() =>
+                            setShowSearch((value) => !value)
+                        }
                         className="size-9 rounded-full text-muted-foreground transition-colors hover:bg-white/80 hover:text-primary"
                     >
                         <Search className="size-[17px]" />
                     </Button>
 
-                    {showSearch && <SearchForm />}
+                    {showSearch && (
+                        <SearchForm
+                            search={search}
+                            onSearchChange={setSearch}
+                            onSubmit={handleSearch}
+                        />
+                    )}
                 </div>
 
                 {/* Desktop Navigation */}
@@ -471,7 +514,9 @@ export default function Header() {
                         variant="ghost"
                         size="icon"
                         aria-label="جستجوی محصولات"
-                        onClick={() => setShowSearch((value) => !value)}
+                        onClick={() =>
+                            setShowSearch((value) => !value)
+                        }
                     >
                         <Search className="size-5" />
                     </Button>
@@ -510,7 +555,12 @@ export default function Header() {
             {/* Mobile Search */}
             {showSearch && (
                 <div className="px-4 pb-4 md:hidden">
-                    <SearchForm mobile />
+                    <SearchForm
+                        mobile
+                        search={search}
+                        onSearchChange={setSearch}
+                        onSubmit={handleSearch}
+                    />
                 </div>
             )}
         </header>

@@ -28,6 +28,8 @@ export type ProductFilters = {
     category_id?: number;
     min_price?: number;
     max_price?: number;
+    in_stock?: boolean;
+    sort_by?: "newest" | "oldest";
     per_page?: number;
     page?: number;
 };
@@ -69,18 +71,23 @@ export async function getProducts(
         category_id,
         min_price,
         max_price,
+        in_stock,
+        sort_by,
         per_page = 20,
         page = 1,
     } = filters;
 
+    // Search
     if (search?.trim()) {
         params.set("search", search.trim());
     }
 
-    if (category_id && category_id > 0) {
+    // Category
+    if (category_id !== undefined && category_id > 0) {
         params.set("category_id", String(category_id));
     }
 
+    // Price range
     if (min_price !== undefined && min_price >= 0) {
         params.set("min_price", String(min_price));
     }
@@ -89,8 +96,29 @@ export async function getProducts(
         params.set("max_price", String(max_price));
     }
 
-    params.set("per_page", String(per_page));
-    params.set("page", String(page));
+    // Stock availability
+    if (in_stock !== undefined) {
+        params.set("in_stock", String(in_stock));
+    }
+
+    // Sorting
+    if (sort_by) {
+        params.set("sort_by", sort_by);
+    }
+
+    // Pagination
+    const safePerPage = Math.min(
+        Math.max(Math.floor(per_page), 1),
+        50,
+    );
+
+    const safePage = Math.max(
+        Math.floor(page),
+        1,
+    );
+
+    params.set("per_page", String(safePerPage));
+    params.set("page", String(safePage));
 
     return apiRequest<PaginatedProducts>(
         `products?${params.toString()}`,
