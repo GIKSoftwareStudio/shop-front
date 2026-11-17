@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 import type { Product } from "@/api/store/products";
 import { getProductImage } from "@/api/store/products";
+import { apiRequest } from "@/api/store/client";
 
 export type CartItem = {
     id: number;
@@ -15,10 +16,18 @@ export type CartItem = {
     stock: number;
 };
 
+export type AddItemResult =
+    | { ok: true }
+    | {
+          ok: false;
+          reason: "network" | "out_of_stock" | "insufficient";
+          message: string;
+      };
+
 type CartStore = {
     items: CartItem[];
 
-    addItem: (product: Product) => void;
+    addItem: (product: Product) => Promise<AddItemResult>;
     removeItem: (productId: number) => void;
     updateQuantity: (productId: number, quantity: number) => void;
     clearCart: () => void;
@@ -36,17 +45,62 @@ function getStock(product: Product): number {
 
 export const useCartStore = create<CartStore>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             items: [],
 
-            addItem: (product) =>
-                set((state) => {
-                    const stock = getStock(product);
+            // موجودی زنده را قبل از اضافه کردن از سرور میگیریم. فقط در صورتی
+            // که موجودی واقعی کافی باشد آیتم وارد سبد میشود.
+            addItem: async (product) => {
+                let freshProduct: Product;
 
-                    if (stock <= 0) {
-                        return state;
+                try {
+                    const response = await apiRequest<
+                        Product & { data?: Product }
+                    >(`products/${product.id}`, { cache: "no-store" });
+
+                    const resolved = response?.data ?? response;
+
+                    if (
+                        !resolved ||
+                        typeof resolved !== "object" ||
+                        !resolved.id
+                    ) {
+                        throw new Error("پاسخ نامعتبر محصول");
                     }
 
+                    freshProduct = resolved;
+                } catch {
+                    return {
+                        ok: false,
+                        reason: "network",
+                        message:
+                            "امکان بررسی موجودی وجود ندارد. دوباره تلاش کنید.",
+                    };
+                }
+
+                const stock = getStock(freshProduct);
+
+                if (stock <= 0) {
+                    return {
+                        ok: false,
+                        reason: "out_of_stock",
+                        message: "این محصول ناموجود است.",
+                    };
+                }
+
+                const currentQuantity =
+                    get().items.find((item) => item.id === product.id)
+                        ?.quantity ?? 0;
+
+                if (currentQuantity >= stock) {
+                    return {
+                        ok: false,
+                        reason: "insufficient",
+                        message: "موجودی محصول کافی نیست.",
+                    };
+                }
+
+                set((state) => {
                     const existingItem = state.items.find(
                         (item) => item.id === product.id,
                     );
@@ -56,16 +110,16 @@ export const useCartStore = create<CartStore>()(
                             items: state.items.map((item) =>
                                 item.id === product.id
                                     ? {
-                                        ...item,
-                                        title: product.title,
-                                        price: Number(product.price),
-                                        image: getProductImage(product),
-                                        stock,
-                                        quantity: Math.min(
-                                            item.quantity + 1,
-                                            stock,
-                                        ),
-                                    }
+                                          ...item,
+                                          title: freshProduct.title,
+                                          price: Number(freshProduct.price),
+                                          image: getProductImage(freshProduct),
+                                          stock,
+                                          quantity: Math.min(
+                                              item.quantity + 1,
+                                              stock,
+                                          ),
+                                      }
                                     : item,
                             ),
                         };
@@ -75,16 +129,19 @@ export const useCartStore = create<CartStore>()(
                         items: [
                             ...state.items,
                             {
-                                id: product.id,
-                                title: product.title,
-                                price: Number(product.price),
-                                image: getProductImage(product),
+                                id: freshProduct.id,
+                                title: freshProduct.title,
+                                price: Number(freshProduct.price),
+                                image: getProductImage(freshProduct),
                                 quantity: 1,
                                 stock,
                             },
                         ],
                     };
-                }),
+                });
+
+                return { ok: true };
+            },
 
             removeItem: (productId) =>
                 set((state) => ({

@@ -21,6 +21,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         : [defaultImage];
 
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [adding, setAdding] = useState(false);
     const imageUrl = imagesList[currentImageIndex] ?? defaultImage;
 
     function handleNextImage(e: React.MouseEvent) {
@@ -46,19 +47,26 @@ export default function ProductCard({ product }: ProductCardProps) {
     const formattedPrice = Number(product.price).toLocaleString("fa-IR");
     const isOutOfStock = product.stock <= 0;
 
-    function handleAddToCart() {
-        if (isOutOfStock) return;
-        addItem(product);
-        toast.success("محصول به سبد خرید اضافه شد");
+    async function handleAdd() {
+        if (isOutOfStock || adding) return;
+
+        setAdding(true);
+
+        try {
+            const result = await addItem(product);
+
+            if (result.ok) {
+                toast.success("محصول به سبد خرید اضافه شد");
+            } else {
+                toast.error(result.message);
+            }
+        } finally {
+            setAdding(false);
+        }
     }
 
     function handleDecrease() {
         updateQuantity(product.id, quantity - 1);
-    }
-
-    function handleIncrease() {
-        if (isOutOfStock) return;
-        addItem(product);
     }
 
     return (
@@ -141,8 +149,9 @@ export default function ProductCard({ product }: ProductCardProps) {
                     ) : quantity === 0 ? (
                         <button
                             type="button"
-                            onClick={handleAddToCart}
-                            className="inline-flex min-h-10 w-full min-w-0 items-center justify-center gap-1 rounded-full bg-gradient-to-l from-[#1E3A8A] to-[#2563EB] px-2 py-2 text-[11px] font-medium text-white transition-all hover:brightness-110 active:scale-95 sm:gap-2 sm:px-4 sm:text-sm lg:px-5"
+                            onClick={handleAdd}
+                            disabled={adding}
+                            className="inline-flex min-h-10 w-full min-w-0 items-center justify-center gap-1 rounded-full bg-gradient-to-l from-[#1E3A8A] to-[#2563EB] px-2 py-2 text-[11px] font-medium text-white transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:gap-2 sm:px-4 sm:text-sm lg:px-5"
                         >
                             <ShoppingCart className="size-4 shrink-0" />
                             <span className="truncate">
@@ -153,9 +162,10 @@ export default function ProductCard({ product }: ProductCardProps) {
                         <div className="flex min-h-10 w-full items-center justify-between gap-1 rounded-full border border-blue-200 bg-blue-50 p-1 dark:border-blue-900 dark:bg-blue-950/40">
                             <button
                                 type="button"
-                                onClick={handleIncrease}
+                                onClick={handleAdd}
+                                disabled={adding}
                                 aria-label={`افزایش تعداد ${product.title}`}
-                                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700 active:scale-95"
+                                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <Plus className="size-4" />
                             </button>
