@@ -26,6 +26,8 @@ type Props = {
         category_id?: string;
         min_price?: string;
         max_price?: string;
+        in_stock?: string;
+        sort_by?: string;
         per_page?: string;
         page?: string;
     }>;
@@ -79,17 +81,26 @@ function ProductsLoading() {
 async function ProductsContent({ searchParams }: Props) {
     const params = await searchParams;
 
-    const currentPage = parsePositiveInteger(params.page) ?? 1;
-    const requestedPerPage = parsePositiveInteger(params.per_page) ?? 20;
-    const perPage = Math.min(requestedPerPage, 100);
+    const requestedPage = parsePositiveInteger(params.page);
+    const requestedPerPage = parsePositiveInteger(params.per_page);
 
     const filters: ProductFilters = {
         search: params.search?.trim() || undefined,
         category_id: parsePositiveInteger(params.category_id),
         min_price: parsePrice(params.min_price),
         max_price: parsePrice(params.max_price),
-        per_page: perPage,
-        page: currentPage,
+        in_stock:
+            params.in_stock === "true"
+                ? true
+                : params.in_stock === "false"
+                    ? false
+                    : undefined,
+        sort_by:
+            params.sort_by === "newest" || params.sort_by === "oldest"
+                ? params.sort_by
+                : undefined,
+        per_page: requestedPerPage,
+        page: requestedPage,
     };
 
     if (
@@ -101,35 +112,16 @@ async function ProductsContent({ searchParams }: Props) {
         filters.max_price = undefined;
     }
 
-    let data;
-    let categories: StoreCategory[] = [];
+    const [productsResponse, categoriesResponse] = await Promise.all([
+        getProducts(filters),
+        getStoreCategories(),
+    ]);
 
-    try {
-        const [productsResponse, categoriesResponse] = await Promise.all([
-            getProducts(filters),
-            getStoreCategories().catch((error) => {
-                console.error("Categories API error:", error);
-                return [];
-            }),
-        ]);
+    const data = productsResponse;
+    const categories = categoriesResponse;
 
-        data = productsResponse;
-        categories = categoriesResponse;
-    } catch (error) {
-        console.error("Products API error:", error);
-
-        return (
-            <main dir="rtl" className="mx-auto max-w-7xl p-6">
-                <h1 className="text-2xl font-bold">
-                    محصولات فروشگاه
-                </h1>
-
-                <p className="mt-4 text-destructive">
-                    دریافت محصولات ناموفق بود. اتصال بک‌اند و آدرس API را بررسی کنید.
-                </p>
-            </main>
-        );
-    }
+    const totalPages = data.meta.last_page;
+    const currentPage = data.meta.current_page;
 
     function getPageHref(page: number) {
         const query = new URLSearchParams();
@@ -150,13 +142,19 @@ async function ProductsContent({ searchParams }: Props) {
             query.set("max_price", String(filters.max_price));
         }
 
-        query.set("per_page", String(perPage));
+        if (filters.in_stock !== undefined) {
+            query.set("in_stock", String(filters.in_stock));
+        }
+
+        if (filters.sort_by) {
+            query.set("sort_by", filters.sort_by);
+        }
+
+        query.set("per_page", String(data.meta.per_page));
         query.set("page", String(page));
 
         return `/products?${query.toString()}`;
     }
-
-    const totalPages = data.meta.last_page;
 
     return (
         <main
@@ -213,7 +211,7 @@ async function ProductsContent({ searchParams }: Props) {
                     {totalPages > 1 && (
                         <Pagination className="mt-8">
                             <PaginationContent>
-                                {currentPage > 1 && (
+                                {data.links.prev && currentPage > 1 && (
                                     <PaginationItem>
                                         <PaginationPrevious
                                             href={getPageHref(currentPage - 1)}
@@ -235,7 +233,7 @@ async function ProductsContent({ searchParams }: Props) {
                                     </PaginationItem>
                                 ))}
 
-                                {currentPage < totalPages && (
+                                {data.links.next && currentPage < totalPages && (
                                     <PaginationItem>
                                         <PaginationNext
                                             href={getPageHref(currentPage + 1)}

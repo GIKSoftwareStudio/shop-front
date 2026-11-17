@@ -120,31 +120,56 @@ export async function getProducts(
     params.set("per_page", String(safePerPage));
     params.set("page", String(safePage));
 
-    return apiRequest<PaginatedProducts>(
-        `products?${params.toString()}`,
-        {
-            cache: "no-store",
-        },
-    );
+    try {
+        return await apiRequest<PaginatedProducts>(
+            `products?${params.toString()}`,
+            {
+                cache: "no-store",
+            },
+        );
+    } catch (error) {
+        console.error("Products API error:", error);
+        return {
+            products: [],
+            links: { first: null, last: null, prev: null, next: null },
+            meta: {
+                current_page: safePage,
+                last_page: 1,
+                per_page: safePerPage,
+                total: 0,
+            },
+        };
+    }
 }
 
 export async function getStoreCategories(): Promise<StoreCategory[]> {
-    const response = await apiRequest<CategoriesResponse>(
-        "categories",
-        {
-            cache: "no-store",
-        },
-    );
+    try {
+        const response = await apiRequest<CategoriesResponse>(
+            "categories",
+            {
+                cache: "no-store",
+            },
+        );
 
-    if (Array.isArray(response)) {
-        return response;
+        if (Array.isArray(response)) {
+            return response;
+        }
+
+        if (response && typeof response === "object") {
+            if ("data" in response && Array.isArray(response.data)) {
+                return response.data;
+            }
+
+            if ("categories" in response && Array.isArray(response.categories)) {
+                return response.categories;
+            }
+        }
+
+        return [];
+    } catch (error) {
+        console.error("Categories API error:", error);
+        return [];
     }
-
-    if ("data" in response) {
-        return response.data;
-    }
-
-    return response.categories;
 }
 
 export function getProductImage(product: Product) {
