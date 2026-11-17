@@ -89,7 +89,7 @@ async function ProductsContent({ searchParams }: Props) {
 
     return (
         <section dir="rtl" className="space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="sticky top-16 z-20 -mx-4 flex flex-col gap-4 bg-background/95 px-4 py-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">
                         مدیریت محصولات

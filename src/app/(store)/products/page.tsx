@@ -215,6 +215,7 @@ async function ProductsContent({ searchParams }: Props) {
                                     <PaginationItem>
                                         <PaginationPrevious
                                             href={getPageHref(currentPage - 1)}
+                                            text="صفحه قبل"
                                         />
                                     </PaginationItem>
                                 )}
@@ -237,6 +238,7 @@ async function ProductsContent({ searchParams }: Props) {
                                     <PaginationItem>
                                         <PaginationNext
                                             href={getPageHref(currentPage + 1)}
+                                            text="صفحه بعد"
                                         />
                                     </PaginationItem>
                                 )}

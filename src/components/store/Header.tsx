@@ -137,7 +137,7 @@ function CartContents({
     }
 
     return (
-        <div className="flex h-full flex-col">
+        <div className="flex h-full min-h-0 flex-col">
             <div className="flex-1 space-y-4 overflow-y-auto p-4">
                 {items.map((item: CartItem) => (
                     <div
@@ -223,7 +223,7 @@ function CartContents({
                 ))}
             </div>
 
-            <div className="border-t bg-background p-4">
+            <div className="border-t bg-background p-4 shrink-0">
                 <div className="mb-4 flex items-center justify-between gap-3">
                     <span className="text-sm text-muted-foreground">
                         مبلغ کل
@@ -298,16 +298,18 @@ function CartSheet({
             <SheetContent
                 side="right"
                 dir="rtl"
-                className="flex w-full flex-col sm:max-w-md"
+                className="flex h-full w-full flex-col max-h-screen overflow-hidden sm:max-w-md"
             >
-                <SheetHeader>
+                <SheetHeader className="px-4 pt-4 shrink-0">
                     <SheetTitle>سبد خرید شما</SheetTitle>
                 </SheetHeader>
 
-                <CartContents
-                    hydrated={hydrated}
-                    onClose={() => setOpen(false)}
-                />
+                <div className="flex-1 min-h-0">
+                    <CartContents
+                        hydrated={hydrated}
+                        onClose={() => setOpen(false)}
+                    />
+                </div>
             </SheetContent>
         </Sheet>
     );

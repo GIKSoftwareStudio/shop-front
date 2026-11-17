@@ -211,7 +211,7 @@ export default function ChatWidget() {
                 </section>
             )}
 
-            <div className="flex justify-start">
+            <div className="flex justify-end">
                 <button
                     type="button"
                     onClick={() => setIsOpen((open) => !open)}

@@ -19,7 +19,6 @@ function formatPrice(price: number) {
 
 export default function CheckoutPage() {
     const items = useCartStore((state) => state.items);
-    const clearCart = useCartStore((state) => state.clearCart);
     const totalItems = useCartStore(selectTotalItems);
     const totalPrice = useCartStore(selectTotalPrice);
 
@@ -93,8 +92,6 @@ export default function CheckoutPage() {
             ) {
                 throw new Error("آدرس پرداخت معتبر نیست.");
             }
-
-            clearCart();
 
             toast.success(
                 response.message || "سفارش با موفقیت ثبت شد.",
